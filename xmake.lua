@@ -35,6 +35,7 @@ else
 end
 
 add_requires("hopscotch-map", "minhook", "spdlog", "tiltedcore")
+add_requireconfs("tiltedcore.mimalloc", {version = "v2.2.4", override = true})
 
 target("Codeware")
     set_default(true)
