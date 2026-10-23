@@ -7,16 +7,23 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
       - name: Build
+        shell: pwsh
         run: |
-          xmake f -m release -y
-          xmake -y
+          xmake f -m release -y 2>&1 | Tee-Object build.log
+          if ($LASTEXITCODE -eq 0) { xmake -y 2>&1 | Tee-Object -Append build.log }
+          if ($LASTEXITCODE -ne 0) {
+            # Surface errors as annotations, which are visible without signing in
+            Select-String -Path build.log -Pattern 'error' | Select-Object -First 20 | ForEach-Object { "::error::$($_.Line)" }
+            Get-Content build.log -Tail 15 | ForEach-Object { "::error::$_" }
+            exit 1
+          }
       - name: Package
         shell: pwsh
         run: ./tools/dist/package-mod.ps1 -ReleaseBin build/windows/x64/release/Codeware.dll
